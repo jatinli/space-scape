@@ -204,11 +204,16 @@ export default function Feed() {
         }
         @media (hover: none) { .feed-cap { opacity: 1; transform: none; } }
 
-        /* ---- inline expandable detail ---- */
-        .detail-wrap { height: 0; overflow: hidden; transition: height .6s cubic-bezier(.16,1,.3,1); }
+        /* ---- inline expandable detail (unfolds horizontally) ---- */
+        .detail-wrap { height: 0; overflow: hidden; transition: height .28s ease; }
         .detail-wrap.open { height: clamp(460px, 76vh, 720px); margin-top: 14px; }
 
-        .dt { height: 100%; display: flex; flex-direction: column; }
+        .dt {
+          height: 100%; display: flex; flex-direction: column;
+          clip-path: inset(0 100% 0 0); opacity: 0;
+          transition: clip-path .8s cubic-bezier(.16,1,.3,1), opacity .45s ease .1s;
+        }
+        .detail-wrap.open .dt { clip-path: inset(0 0 0 0); opacity: 1; }
         .dt-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 2px 12px; }
         .dt-hint { font-size: 9px; color: var(--mut); }
         .dt-ctrls { display: flex; gap: 8px; align-items: center; }
