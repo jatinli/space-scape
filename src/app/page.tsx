@@ -4,7 +4,6 @@ import Loader from "@/components/Loader";
 import Nav from "@/components/Nav";
 import Feed from "@/components/Feed";
 import Contact from "@/components/Contact";
-import { ProjectViewerProvider } from "@/components/ProjectViewer";
 
 export default function Home() {
   return (
@@ -13,12 +12,10 @@ export default function Home() {
       <Cursor />
       <Nav />
       <SmoothScroll>
-        <ProjectViewerProvider>
-          <main id="top">
-            <Feed />
-            <Contact />
-          </main>
-        </ProjectViewerProvider>
+        <main id="top">
+          <Feed />
+          <Contact />
+        </main>
       </SmoothScroll>
     </>
   );
