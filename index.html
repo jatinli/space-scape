@@ -37,11 +37,12 @@
         const out = Babel.transform(cleaned, { presets: ["react"] }).code;
 
         const factory = new Function(
-          "React", "useState", "useEffect", "useRef", "useCallback",
+          "React", "useState", "useEffect", "useRef", "useCallback", "useMemo", "useLayoutEffect",
           out + "\nreturn App;"
         );
         const App = factory(
-          React, React.useState, React.useEffect, React.useRef, React.useCallback
+          React, React.useState, React.useEffect, React.useRef,
+          React.useCallback, React.useMemo, React.useLayoutEffect
         );
 
         boot.remove();
