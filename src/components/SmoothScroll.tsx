@@ -17,25 +17,25 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
     if (reduce) return;
 
     const lenis = new Lenis({
-      duration: 1.15,
+      duration: 1.0,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      lerp: 0.085,
-      wheelMultiplier: 1,
+      lerp: 0.1,
+      wheelMultiplier: 1.12,
       smoothWheel: true,
-      touchMultiplier: 1.6,
+      touchMultiplier: 1.8,
     });
 
     lenis.on("scroll", ScrollTrigger.update);
 
-    // velocity-driven "minimize while scrolling, settle back when idle"
+    // velocity-driven minimize while scrolling, settles back when idle
     let scale = 1;
     const raf = (time: number) => {
       lenis.raf(time * 1000);
       const el = wrap.current;
       if (el) {
         const v = Math.abs((lenis as unknown as { velocity: number }).velocity || 0);
-        const target = 1 - Math.min(v * 0.0095, 0.14); // up to ~14% smaller while scrolling fast
-        scale += (target - scale) * 0.11; // ease toward target / back to 1
+        const target = 1 - Math.min(v * 0.0095, 0.14);
+        scale += (target - scale) * 0.11;
         if (Math.abs(scale - 1) < 0.0008) {
           scale = 1;
           if (el.style.transform) {
@@ -44,11 +44,10 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
             el.style.borderRadius = "";
           }
         } else {
-          // scale around the centre of what's currently on screen so nothing jumps
           const originY = window.scrollY + window.innerHeight / 2;
           el.style.transformOrigin = `50% ${originY}px`;
           el.style.transform = `scale(${scale})`;
-          el.style.borderRadius = `${(1 - scale) * 320}px`; // rounds off as it minimizes
+          el.style.borderRadius = `${(1 - scale) * 320}px`;
         }
       }
     };

@@ -7,12 +7,10 @@ import { PROJECTS, type Project } from "@/lib/projects";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/* light CSS site-plan placeholder */
 function SitePlan({ label }: { label: string }) {
   return (
     <div className="sp" role="img" aria-label={`Site plan, ${label}`}>
-      <span className="sp-road rh" />
-      <span className="sp-road rv" />
+      <span className="sp-road rh" /><span className="sp-road rv" />
       <span className="sp-blk b1" /><span className="sp-blk b2" /><span className="sp-blk b3" />
       <span className="sp-blk b4" /><span className="sp-blk b5" /><span className="sp-blk b6" />
       <span className="sp-grn gA" /><span className="sp-grn gB" />
@@ -22,77 +20,32 @@ function SitePlan({ label }: { label: string }) {
   );
 }
 
-/* horizontal, drag-scrollable detail strip shown inline under a project */
-function DetailStrip({ p, onClose }: { p: Project; onClose: () => void }) {
+/* the right-hand panels: horizontal, drag on desktop / swipe on phone */
+function RightStrip({ p }: { p: Project }) {
   const strip = useRef<HTMLDivElement>(null);
-  const drag = useRef({ active: false, startX: 0, startLeft: 0, moved: false });
+  const drag = useRef({ active: false, startX: 0, startLeft: 0 });
 
   const onDown = (e: React.PointerEvent) => {
-    if (e.pointerType !== "mouse") return; // touch uses native horizontal scroll
+    if (e.pointerType !== "mouse") return;
     const el = strip.current!;
-    drag.current = { active: true, startX: e.clientX, startLeft: el.scrollLeft, moved: false };
+    drag.current = { active: true, startX: e.clientX, startLeft: el.scrollLeft };
     el.setPointerCapture(e.pointerId);
     el.classList.add("grabbing");
   };
   const onMove = (e: React.PointerEvent) => {
     if (!drag.current.active) return;
-    const el = strip.current!;
-    const dx = e.clientX - drag.current.startX;
-    if (Math.abs(dx) > 3) drag.current.moved = true;
-    el.scrollLeft = drag.current.startLeft - dx;
+    strip.current!.scrollLeft = drag.current.startLeft - (e.clientX - drag.current.startX);
   };
-  const onUp = () => {
-    drag.current.active = false;
-    strip.current?.classList.remove("grabbing");
-  };
-  const by = (dir: number) => {
-    const el = strip.current;
-    if (el) el.scrollBy({ left: dir * el.clientWidth * 0.85, behavior: "smooth" });
-  };
+  const onUp = () => { drag.current.active = false; strip.current?.classList.remove("grabbing"); };
 
   return (
-    <div className="dt">
-      <div className="dt-bar">
-        <span className="mono dt-hint">Drag ← → or use arrows</span>
-        <div className="dt-ctrls">
-          <button className="dt-arrow" data-cursor onClick={() => by(-1)} aria-label="Scroll left">‹</button>
-          <button className="dt-arrow" data-cursor onClick={() => by(1)} aria-label="Scroll right">›</button>
-          <button className="dt-close mono" data-cursor onClick={onClose} aria-label="Close">Close ✕</button>
-        </div>
+    <div className="dstrip" ref={strip} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerLeave={onUp}>
+      <div className="dpanel dp-img"><div className={`scene ${p.sceneB}`} /></div>
+      <div className="dpanel dp-text">
+        <span className="mono d-kick">Description</span>
+        <p className="d-body">{p.desc2}</p>
       </div>
-
-      <div
-        className="dt-strip"
-        ref={strip}
-        onPointerDown={onDown}
-        onPointerMove={onMove}
-        onPointerUp={onUp}
-        onPointerLeave={onUp}
-      >
-        <section className="dt-panel dt-info">
-          <span className="mono dt-cat">{p.category}</span>
-          <h3 className="display dt-name">{p.name}</h3>
-          <dl className="dt-dl">
-            <div><dt className="mono">Architecture</dt><dd>{p.architect}</dd></div>
-            <div><dt className="mono">Visualisation</dt><dd>Space Scape</dd></div>
-            <div><dt className="mono">Location</dt><dd>{p.location}</dd></div>
-            <div><dt className="mono">Year</dt><dd>{p.year}</dd></div>
-            <div><dt className="mono">Typology</dt><dd>{p.typology}</dd></div>
-            <div><dt className="mono">Scale</dt><dd>{p.size}</dd></div>
-            <div><dt className="mono">Status</dt><dd>{p.status}</dd></div>
-          </dl>
-          <p className="dt-desc">{p.desc}</p>
-        </section>
-
-        <section className="dt-panel dt-image"><div className={`scene ${p.sceneB}`} /></section>
-
-        <section className="dt-panel dt-text">
-          <span className="mono dt-kick">Description</span>
-          <p className="dt-body">{p.desc2}</p>
-        </section>
-
-        <section className="dt-panel dt-plan"><SitePlan label={p.location} /></section>
-      </div>
+      <div className="dpanel dp-plan"><SitePlan label={p.location} /></div>
     </div>
   );
 }
@@ -106,36 +59,28 @@ export default function Feed() {
     const ctx = gsap.context(() => {
       gsap.utils.toArray<HTMLElement>(".feed-item").forEach((item) => {
         const img = item.querySelector(".scene") as HTMLElement;
-        if (!reduce) {
-          gsap.fromTo(
-            item,
-            { clipPath: "inset(6% 4% 6% 4%)", opacity: 0.4 },
-            {
-              clipPath: "inset(0% 0% 0% 0%)",
-              opacity: 1,
-              ease: "power3.out",
-              duration: 1.1,
-              scrollTrigger: { trigger: item, start: "top 92%" },
-            }
-          );
-          gsap.fromTo(
-            img,
-            { yPercent: -7 },
-            {
-              yPercent: 7,
-              ease: "none",
-              scrollTrigger: { trigger: item, start: "top bottom", end: "bottom top", scrub: 1 },
-            }
-          );
-        }
+        if (reduce) return;
+        gsap.fromTo(
+          item,
+          { clipPath: "inset(6% 4% 6% 4%)", opacity: 0.4 },
+          {
+            clipPath: "inset(0% 0% 0% 0%)", opacity: 1,
+            ease: "power3.out", duration: 1.1,
+            scrollTrigger: { trigger: item, start: "top 92%" },
+          }
+        );
+        gsap.fromTo(
+          img,
+          { yPercent: -7 },
+          { yPercent: 7, ease: "none", scrollTrigger: { trigger: item, start: "top bottom", end: "bottom top", scrub: 1 } }
+        );
       });
     }, root);
     return () => ctx.revert();
   }, []);
 
-  // re-measure scroll positions after a panel opens/closes
   useEffect(() => {
-    const t = setTimeout(() => ScrollTrigger.refresh(), 680);
+    const t = setTimeout(() => ScrollTrigger.refresh(), 1100);
     return () => clearTimeout(t);
   }, [openNo]);
 
@@ -144,14 +89,31 @@ export default function Feed() {
       {PROJECTS.map((p) => {
         const isOpen = openNo === p.no;
         return (
-          <div className="feed-block" key={p.no}>
+          <article key={p.no} className={`feed-block ${isOpen ? "open" : ""}`}>
+            {/* LEFT — info / specs, beside the photo */}
+            <div className="detail-left">
+              <div className="dpanel dp-info">
+                <span className="mono d-cat">{p.category}</span>
+                <p className="d-lede">{p.desc}</p>
+                <dl className="d-dl">
+                  <div><dt className="mono">Architecture</dt><dd>{p.architect}</dd></div>
+                  <div><dt className="mono">Visualisation</dt><dd>Space Scape</dd></div>
+                  <div><dt className="mono">Year</dt><dd>{p.year}</dd></div>
+                  <div><dt className="mono">Typology</dt><dd>{p.typology}</dd></div>
+                  <div><dt className="mono">Scale</dt><dd>{p.size}</dd></div>
+                  <div><dt className="mono">Status</dt><dd>{p.status}</dd></div>
+                </dl>
+              </div>
+            </div>
+
+            {/* CENTRE — the photo */}
             <button
-              className={`feed-item f-${p.span} ${isOpen ? "active" : ""}`}
+              className={`feed-item f-${p.span}`}
               data-cursor
               data-cursor-label={isOpen ? "Close" : "Open"}
               onClick={() => setOpenNo(isOpen ? null : p.no)}
               aria-expanded={isOpen}
-              aria-label={`${isOpen ? "Close" : "Open"} ${p.name} by ${p.architect}`}
+              aria-label={`${isOpen ? "Collapse" : "Expand"} ${p.name} by ${p.architect}`}
             >
               <div className={`scene ${p.scene}`} />
               <span className="feed-no mono">{p.no}</span>
@@ -164,24 +126,29 @@ export default function Feed() {
               </div>
             </button>
 
-            <div className={`detail-wrap ${isOpen ? "open" : ""}`}>
-              <DetailStrip p={p} onClose={() => setOpenNo(null)} />
+            {/* RIGHT — gallery, description, site plan */}
+            <div className="detail-right">
+              <RightStrip p={p} />
+              <span className="d-hint mono" aria-hidden>Drag / swipe →</span>
             </div>
-          </div>
+          </article>
         );
       })}
 
       <style>{`
         .feed {
-          max-width: min(92vw, 590px); margin: 0 auto;
+          --gap: clamp(14px, 1.5vw, 26px);
+          max-width: min(92vw, 560px); margin: 0 auto;
           padding: clamp(96px, 14vh, 150px) clamp(14px, 3vw, 28px) clamp(40px, 8vh, 90px);
           display: flex; flex-direction: column; gap: clamp(40px, 9vh, 120px);
         }
-        .feed-block { display: flex; flex-direction: column; }
+        .feed-block { position: relative; display: flex; flex-direction: column; }
         .feed-item {
           position: relative; width: 100%; overflow: hidden; background: #0b0a09;
           display: block; padding: 0; border: none; will-change: clip-path, opacity;
+          transition: box-shadow .6s ease, transform .6s cubic-bezier(.16,1,.3,1);
         }
+        .feed-block.open .feed-item { box-shadow: 0 26px 70px -28px rgba(0,0,0,.5); transform: translateY(-4px); }
         .f-std { aspect-ratio: 3 / 2; }
         .f-wide { aspect-ratio: 16 / 9; }
         .f-tall { aspect-ratio: 4 / 5; }
@@ -192,7 +159,7 @@ export default function Feed() {
           display: flex; flex-direction: column; gap: 8px;
           background: linear-gradient(to top, rgba(8,8,9,0.8), rgba(8,8,9,0) 100%);
           opacity: 0; transform: translateY(12px);
-          transition: opacity .45s ease, transform .55s cubic-bezier(.16,1,.3,1);
+          transition: opacity .4s ease, transform .5s cubic-bezier(.16,1,.3,1);
         }
         .feed-cap-row { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
         .feed-name { font-size: clamp(20px, 2.2vw, 34px); color: #fff; }
@@ -200,57 +167,77 @@ export default function Feed() {
         .feed-arch { font-size: 9px; color: var(--bronze); letter-spacing: 0.16em; }
         @media (hover: hover) {
           .feed-item:hover .scene { transform: scale(1.05); }
-          .feed-item:hover .feed-cap, .feed-item.active .feed-cap { opacity: 1; transform: none; }
+          .feed-item:hover .feed-cap, .feed-block.open .feed-cap { opacity: 1; transform: none; }
         }
         @media (hover: none) { .feed-cap { opacity: 1; transform: none; } }
 
-        /* ---- inline expandable detail (unfolds horizontally) ---- */
-        .detail-wrap { height: 0; overflow: hidden; transition: height .28s ease; }
-        .detail-wrap.open { height: clamp(460px, 76vh, 720px); margin-top: 14px; }
-
-        .dt {
-          height: 100%; display: flex; flex-direction: column;
-          clip-path: inset(0 100% 0 0); opacity: 0;
-          transition: clip-path .8s cubic-bezier(.16,1,.3,1), opacity .45s ease .1s;
+        /* ---- info unfolds to the LEFT of the photo, gallery to the RIGHT (both at photo level) ---- */
+        .detail-left, .detail-right {
+          position: absolute; top: 0; bottom: 0;
+          width: calc(50vw - min(46vw, 280px) - var(--gap));
+          pointer-events: none;
         }
-        .detail-wrap.open .dt { clip-path: inset(0 0 0 0); opacity: 1; }
-        .dt-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 2px 12px; }
-        .dt-hint { font-size: 9px; color: var(--mut); }
-        .dt-ctrls { display: flex; gap: 8px; align-items: center; }
-        .dt-arrow { width: 34px; height: 34px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 18px; display: flex; align-items: center; justify-content: center; }
-        .dt-arrow:hover { background: var(--ink); color: var(--bg); }
-        .dt-close { border: 1px solid var(--line); padding: 8px 11px; font-size: 9px; color: var(--ink); }
-        .dt-close:hover { background: var(--ink); color: var(--bg); }
+        .detail-left { right: calc(100% + var(--gap)); display: flex; justify-content: flex-end; }
+        .detail-right { left: calc(100% + var(--gap)); }
+        .feed-block.open .detail-left, .feed-block.open .detail-right { pointer-events: auto; }
 
-        .dt-strip {
-          flex: 1; display: flex; gap: clamp(12px, 1.6vw, 22px);
-          overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory;
-          scrollbar-width: none; cursor: grab; touch-action: pan-x;
+        .dstrip {
+          height: 100%; display: flex; gap: clamp(10px, 1.1vw, 16px);
+          overflow-x: auto; overflow-y: hidden; scroll-snap-type: x proximity;
+          scrollbar-width: none; cursor: grab; touch-action: pan-x; padding-right: 3vw;
         }
-        .dt-strip::-webkit-scrollbar { display: none; }
-        .dt-strip.grabbing { cursor: grabbing; }
-        .dt-panel { flex: none; height: 100%; scroll-snap-align: start; overflow: hidden; }
-        .dt-info { width: min(92%, 560px); background: var(--bg-2); padding: clamp(22px, 3vw, 40px); display: flex; flex-direction: column; overflow-y: auto; }
-        .dt-cat { font-size: 9px; color: var(--bronze); }
-        .dt-name { font-size: clamp(24px, 3vw, 40px); margin: 12px 0 18px; color: var(--ink); }
-        .dt-dl { display: grid; grid-template-columns: 1fr; }
-        .dt-dl > div { display: flex; justify-content: space-between; gap: 16px; padding: 9px 0; border-top: 1px solid var(--line-soft); }
-        .dt-dl > div:last-child { border-bottom: 1px solid var(--line-soft); }
-        .dt-dl dt { font-size: 8.5px; color: var(--mut); }
-        .dt-dl dd { font-family: var(--font-mono); font-size: 11px; color: var(--ink); text-align: right; }
-        .dt-desc { margin-top: 18px; font-size: clamp(14px, 1.1vw, 16px); line-height: 1.55; color: var(--mut); }
+        .dstrip::-webkit-scrollbar { display: none; }
+        .dstrip.grabbing { cursor: grabbing; }
 
-        .dt-image { width: min(92%, 760px); position: relative; background: #0b0a09; }
-        .dt-image .scene { position: absolute; inset: 0; }
+        /* napkin unfold — graceful hinge */
+        .dpanel {
+          flex: none; height: 100%; scroll-snap-align: start; overflow: hidden; position: relative;
+          opacity: 0;
+          transition: clip-path 1.2s cubic-bezier(.16,1,.3,1), opacity .85s ease,
+                      transform 1.15s cubic-bezier(.16,1,.3,1);
+        }
+        /* right panels hinge from their left edge */
+        .dp-img, .dp-text, .dp-plan { clip-path: inset(0 100% 0 0); transform: perspective(1100px) rotateY(-15deg); transform-origin: left center; }
+        /* left info hinges from its right edge (toward the photo, opening left) */
+        .dp-info { clip-path: inset(0 0 0 100%); transform: perspective(1100px) rotateY(15deg); transform-origin: right center; }
+        .feed-block.open .dpanel { clip-path: inset(0 0 0 0); opacity: 1; transform: perspective(1100px) rotateY(0deg); }
+        .feed-block.open .dp-info { transition-delay: .12s; }
+        .feed-block.open .dp-img  { transition-delay: .30s; }
+        .feed-block.open .dp-text { transition-delay: .50s; }
+        .feed-block.open .dp-plan { transition-delay: .70s; }
 
-        .dt-text { width: min(92%, 620px); background: var(--bg-2); padding: clamp(22px, 3vw, 44px); display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
-        .dt-kick { font-size: 9px; color: var(--bronze); }
-        .dt-body { font-size: clamp(15px, 1.3vw, 19px); line-height: 1.7; color: var(--ink); }
+        /* inner content also unfolds immersively: photos zoom-resolve, text rises */
+        .dpanel .scene, .dpanel .sp { transition: transform 1.4s cubic-bezier(.16,1,.3,1); }
+        .dp-img .scene, .dp-plan .sp { transform: scale(1.22); }
+        .feed-block.open .dp-img .scene { transform: scale(1); transition-delay: .42s; }
+        .feed-block.open .dp-plan .sp { transform: scale(1); transition-delay: .82s; }
+        .dp-info > *, .dp-text > * { opacity: 0; transform: translateY(18px); transition: opacity .8s ease, transform .9s cubic-bezier(.16,1,.3,1); }
+        .feed-block.open .dp-info > * { opacity: 1; transform: none; transition-delay: .34s; }
+        .feed-block.open .dp-text > * { opacity: 1; transform: none; transition-delay: .78s; }
 
-        .dt-plan { width: min(92%, 760px); }
-        .dt-plan .sp { width: 100%; height: 100%; }
+        .dp-info { width: min(100%, 320px); background: var(--bg-2); padding: clamp(18px,2.2vw,28px); display: flex; flex-direction: column; }
+        .d-cat { font-size: 8.5px; color: var(--bronze); }
+        .d-lede { font-size: clamp(15px,1.4vw,20px); line-height: 1.3; letter-spacing: -0.01em; color: var(--ink); margin: 10px 0 16px; }
+        .d-dl { display: flex; flex-direction: column; margin-top: auto; }
+        .d-dl > div { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid var(--line-soft); }
+        .d-dl dt { font-size: 8px; color: var(--mut); }
+        .d-dl dd { font-family: var(--font-mono); font-size: 10px; color: var(--ink); text-align: right; }
 
-        .sp { position: relative; background: #f1f0ec; overflow: hidden; border: 1px solid var(--line-soft); }
+        .dp-img { width: min(84vw, 480px); background: #0b0a09; }
+        .dp-img .scene { position: absolute; inset: 0; }
+
+        .dp-text { width: min(78vw, 360px); background: var(--bg-2); padding: clamp(18px,2.2vw,30px); display: flex; flex-direction: column; gap: 12px; justify-content: center; }
+        .d-kick { font-size: 8.5px; color: var(--bronze); }
+        .d-body { font-size: clamp(13px,1.2vw,16px); line-height: 1.65; color: var(--ink); }
+
+        .dp-plan { width: min(84vw, 480px); }
+        .dp-plan .sp { position: absolute; inset: 0; }
+
+        .d-hint { position: absolute; right: 10px; bottom: 6px; z-index: 3; font-size: 8.5px; color: var(--mut); pointer-events: none; opacity: 0; transition: opacity .5s ease 1.2s; }
+        .feed-block.open .d-hint { opacity: 1; }
+
+        /* ---- site plan ---- */
+        .sp { position: relative; background: #f1f0ec; overflow: hidden; }
         .sp::before { content: ""; position: absolute; inset: 0; background:
           repeating-linear-gradient(90deg, transparent 0 48px, rgba(15,15,16,0.045) 48px 49px),
           repeating-linear-gradient(0deg, transparent 0 48px, rgba(15,15,16,0.045) 48px 49px); }
@@ -268,11 +255,22 @@ export default function Feed() {
         .sp-grn.gA { left: 50%; top: 30%; width: 30%; height: 30%; transform: rotate(2deg); }
         .sp-grn.gB { left: 80%; top: 64%; width: 14%; height: 20%; }
         .sp-site { position: absolute; left: 30%; top: 12%; width: 46%; height: 54%; border: 1.5px dashed #c0392b; transform: rotate(-4deg); }
-        .sp-tag { position: absolute; left: 16px; bottom: 14px; font-size: 9px; color: #6a6a6a; background: rgba(255,255,255,0.72); padding: 5px 9px; }
+        .sp-tag { position: absolute; left: 14px; bottom: 12px; font-size: 9px; color: #6a6a6a; background: rgba(255,255,255,0.72); padding: 5px 9px; }
 
+        /* not enough room beside the photo -> stack below: info first, then the strip (swipeable) */
+        @media (max-width: 1180px) {
+          .detail-left, .detail-right {
+            position: relative; left: auto; right: auto; width: 100%; top: auto; bottom: auto;
+            height: 0; overflow: hidden; transition: height .7s cubic-bezier(.16,1,.3,1); display: block;
+          }
+          .feed-block.open .detail-left { height: auto; margin-top: 14px; }
+          .feed-block.open .detail-right { height: clamp(210px, 44vh, 340px); margin-top: 12px; }
+          .dp-info { width: 100%; }
+        }
         @media (max-width: 620px) {
-          .detail-wrap.open { height: clamp(420px, 70vh, 560px); }
-          .dt-info, .dt-text, .dt-image, .dt-plan { width: 90%; }
+          .feed-block.open .detail-right { height: clamp(200px, 42vh, 300px); }
+          .dp-text { width: 74vw; }
+          .dp-img, .dp-plan { width: 82vw; }
         }
       `}</style>
     </section>
